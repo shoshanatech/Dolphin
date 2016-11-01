@@ -468,7 +468,7 @@ mutateClass: oldClass toBeASubclassOf: newSuperclass
 			oldClass become: newClass.
 			newClass oneWayBecome: oldClass]
 		ifFalse: 
-			[| newClass |
+			[| newClass oldMeta newMeta |
 			newClass := self newClassLike: oldClass superclass: newSuperclass.
 			self install: newClass.
 			self mutateAllInstancesOf: oldClass toBeInstancesOf: newClass.
@@ -478,11 +478,16 @@ mutateClass: oldClass toBeASubclassOf: newSuperclass
 					collection of Class, so need special case handling"
 					Smalltalk allRoots do: [:each | self mutateClass: each class toBeASubclassOf: newClass]]
 				ifFalse: [oldClass subclasses do: [:cls | self mutateClass: cls toBeASubclassOf: newClass]].
-			oldClass class removeFromSuper.
+			oldMeta := oldClass class.
+			newMeta := newClass class.
+			oldMeta removeFromSuper.
 			oldClass removeFromSuper.
 			oldClass become: newClass.
 			newClass oneWayBecome: oldClass.
-			self updateVMRegistryWith: newClass]!
+			"Swap the metaclasses as well, since copying blocks may reference them directly"
+			oldMeta become: newMeta.
+			newMeta oneWayBecome: oldMeta.
+			self updateVMRegistryWith: newClass].!
 
 mutateInSitu
 	"Private - Mutate the class being modified without mutating its instances.
